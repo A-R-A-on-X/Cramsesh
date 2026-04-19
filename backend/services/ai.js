@@ -1,24 +1,24 @@
 const axios = require('axios');
 
-const MODEL = process.env.OLLAMA_MODEL || 'mistralai/mistral-7b-instruct:free';
+const MODEL = process.env.OLLAMA_MODEL || 'llama3-8b-8192';
 
 async function chat(messages, options = {}) {
   try {
+    const headers = {};
+    headers['Authorization'] = 'Bearer ' + process.env.GROQ_API_KEY;
+    headers['Content-Type'] = 'application/json';
+
     const response = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
         model: MODEL,
-        messages,
+        messages: messages,
         max_tokens: options.maxTokens || 800,
+        temperature: options.temperature || 0.7
       },
       {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'X-Title': 'CramSesh'
-          'Content-Type': 'application/json',
-          
-        },
-        timeout: 60000
+        headers: headers,
+        timeout: 30000
       }
     );
     return response.data.choices[0].message.content;
@@ -29,12 +29,12 @@ async function chat(messages, options = {}) {
 }
 
 async function generateLessons(content, filename) {
-  const prompt = `You are an expert educational content designer. Analyze the following study material and break it into clear, structured lessons.
+  const prompt = `You are an expert educational content designer. Analyze the following study material and break it into clear structured lessons.
 
 Material: "${filename}"
 Content: ${content.slice(0, 3000)}
 
-Generate 3 lessons from this material. Return ONLY valid JSON with no markdown or extra text:
+Generate 3 lessons. Return ONLY valid JSON no markdown no extra text:
 {
   "lessons": [
     {
@@ -42,7 +42,7 @@ Generate 3 lessons from this material. Return ONLY valid JSON with no markdown o
       "topic": "Main topic",
       "difficulty": "easy",
       "estimated_minutes": 20,
-      "content": "Detailed lesson content (200-300 words)",
+      "content": "Detailed lesson content 200 to 300 words",
       "summary": "2 sentence summary",
       "key_points": ["point 1", "point 2", "point 3"]
     }
@@ -57,24 +57,25 @@ Generate 3 lessons from this material. Return ONLY valid JSON with no markdown o
   } catch {
     return {
       lessons: [{
-        title: `Introduction to ${filename}`,
+        title: 'Introduction to ' + filename,
         topic: 'General',
         difficulty: 'medium',
         estimated_minutes: 30,
         content: response,
-        summary: 'AI-generated lesson from your uploaded material.',
+        summary: 'AI generated lesson from your uploaded material.',
         key_points: ['Review the material carefully', 'Take notes on key concepts', 'Practice with the quiz']
       }]
     };
   }
 }
 
-async function generateQuiz(lessonContent, lessonTitle, questionCount = 5) {
+async function generateQuiz(lessonContent, lessonTitle, questionCount) {
+  questionCount = questionCount || 5;
   const prompt = `Create a quiz for this lesson: "${lessonTitle}"
 
 Content: ${lessonContent.slice(0, 1500)}
 
-Generate exactly ${questionCount} multiple choice questions. Return ONLY valid JSON with no markdown:
+Generate exactly ${questionCount} multiple choice questions. Return ONLY valid JSON no markdown:
 {
   "questions": [
     {
@@ -97,9 +98,9 @@ Generate exactly ${questionCount} multiple choice questions. Return ONLY valid J
 }
 
 async function generateSchedule(lessons, userGoals, availableHoursPerDay) {
-  const lessonSummaries = lessons.map(l =>
-    `- "${l.title}" (${l.estimated_minutes} min, ${l.difficulty})`
-  ).join('\n');
+  const lessonSummaries = lessons.map(function(l) {
+    return '- "' + l.title + '" (' + l.estimated_minutes + ' min, ' + l.difficulty + ')';
+  }).join('\n');
 
   const prompt = `Create a study schedule for these lessons:
 ${lessonSummaries}
@@ -107,7 +108,7 @@ ${lessonSummaries}
 User goals: ${userGoals}
 Available hours per day: ${availableHoursPerDay}
 
-Return ONLY valid JSON with no markdown:
+Return ONLY valid JSON no markdown:
 {
   "schedule": [
     {
@@ -137,29 +138,30 @@ Return ONLY valid JSON with no markdown:
 }
 
 async function tutorChat(userMessage, materialContext, chatHistory) {
-  const systemPrompt = `You are CramSesh AI Tutor, an expert and encouraging study assistant.
-You help students understand their study materials deeply.
-${materialContext ? `\nStudent's study material context:\n${materialContext.slice(0, 1500)}` : ''}
+  const context = materialContext ? '\nStudent material context:\n' + materialContext.slice(0, 1500) : '';
+  const systemPrompt = 'You are CramSesh AI Tutor, an expert and encouraging study assistant. You help students understand their study materials deeply.' + context + '\n\nBe clear, encouraging, and educational. Keep responses under 200 words.';
 
-Be clear, encouraging, and educational. Keep responses under 200 words.`;
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...chatHistory.slice(-6).map(h => ({ role: h.role, content: h.content })),
-    { role: 'user', content: userMessage }
-  ];
+  const messages = [{ role: 'system', content: systemPrompt }];
+  const recentHistory = chatHistory.slice(-6);
+  for (let i = 0; i < recentHistory.length; i++) {
+    messages.push({ role: recentHistory[i].role, content: recentHistory[i].content });
+  }
+  messages.push({ role: 'user', content: userMessage });
 
   return await chat(messages, { maxTokens: 600 });
 }
 
 async function analyzeProgress(completedLessons, quizScores, streakDays) {
-  const prompt = `Analyze this student's learning progress:
+  const lessonTitles = completedLessons.map(function(l) { return l.title; }).join(', ');
+  const scoreList = quizScores.map(function(q) { return q.lesson + ': ' + q.score + '%'; }).join(', ');
 
-Completed lessons: ${completedLessons.map(l => l.title).join(', ')}
-Quiz scores: ${quizScores.map(q => `${q.lesson}: ${q.score}%`).join(', ')}
+  const prompt = `Analyze this student learning progress:
+
+Completed lessons: ${lessonTitles}
+Quiz scores: ${scoreList}
 Study streak: ${streakDays} days
 
-Return ONLY valid JSON with no markdown:
+Return ONLY valid JSON no markdown:
 {
   "strengths": ["strength 1", "strength 2"],
   "weak_areas": ["area 1", "area 2"],
