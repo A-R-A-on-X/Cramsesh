@@ -5,7 +5,7 @@ const MODEL = process.env.OLLAMA_MODEL || 'mistralai/mistral-7b-instruct:free';
 async function chat(messages, options = {}) {
   try {
     const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
+      'https://api.groq.com/openai/v1/chat/completions',
       {
         model: MODEL,
         messages,
@@ -14,9 +14,9 @@ async function chat(messages, options = {}) {
       {
         headers: {
           'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://cramsesh-frontend.onrender.com',
           'X-Title': 'CramSesh'
+          'Content-Type': 'application/json',
+          
         },
         timeout: 60000
       }
