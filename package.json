@@ -1,0 +1,12 @@
+{
+  "name": "cramsesh",
+  "version": "1.0.0",
+  "description": "CramSesh — AI-Powered Study Planner",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "start:backend": "cd backend && npm start"
+  },
+  "private": true
+}

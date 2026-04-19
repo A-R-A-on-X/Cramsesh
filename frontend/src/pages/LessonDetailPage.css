@@ -1,0 +1,145 @@
+.lesson-detail { max-width: 760px; }
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: color 0.15s;
+  font-family: var(--font-body);
+}
+.back-btn:hover { color: var(--accent-ion); }
+
+.lesson-hero {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(0,212,255,0.04));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+.lesson-hero-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.lesson-hero-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+.lesson-hero-summary { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+
+.lesson-content-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+.content-heading {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+.lesson-body { line-height: 1.8; color: var(--text-secondary); }
+.lesson-body p { margin-bottom: 0.75rem; }
+.lesson-body p:last-child { margin-bottom: 0; }
+
+.lesson-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+/* Quiz */
+.quiz-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  animation: slideIn 0.3s ease forwards;
+}
+.quiz-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent-plasma);
+}
+.quiz-questions { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 1.5rem; }
+.quiz-question { }
+.q-text { font-weight: 500; margin-bottom: 0.75rem; line-height: 1.5; }
+.q-num { color: var(--accent-ion); font-family: var(--font-display); font-size: 0.85rem; margin-right: 0.5rem; }
+.q-options { display: flex; flex-direction: column; gap: 0.4rem; }
+.q-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.q-option:hover { border-color: var(--accent-ion); color: var(--text-primary); }
+.q-option.selected {
+  background: rgba(108,99,255,0.15);
+  border-color: var(--accent-ion);
+  color: var(--text-primary);
+}
+.opt-letter {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-ion);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+/* Results */
+.quiz-result {
+  background: var(--bg-card);
+  border: 1px solid rgba(57,255,136,0.2);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  text-align: center;
+  animation: slideIn 0.3s ease forwards;
+}
+.result-score-ring { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+.result-score-text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.score-num { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; }
+.score-label { font-size: 0.72rem; color: var(--text-muted); }
+.result-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; }
+.result-xp { color: var(--accent-photon); font-size: 0.88rem; margin-bottom: 1.5rem; }
+
+.result-answers { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; text-align: left; }
+.result-item {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+.result-item.correct { background: rgba(57,255,136,0.05); border-color: rgba(57,255,136,0.2); }
+.result-item.wrong { background: rgba(255,107,157,0.05); border-color: rgba(255,107,157,0.2); }
+.ri-header { display: flex; align-items: flex-start; gap: 0.6rem; }
+.ri-icon { flex-shrink: 0; }
+.ri-q { font-size: 0.85rem; font-weight: 500; }
+.ri-explain { margin-top: 0.4rem; padding-left: 1.6rem; font-size: 0.8rem; color: var(--text-secondary); }
+.ri-exp-text { color: var(--text-muted); margin-top: 0.2rem; }
