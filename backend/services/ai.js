@@ -1,80 +1,60 @@
 const axios = require('axios');
 
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-const MODEL = process.env.OLLAMA_MODEL || 'llama3';
+const MODEL = process.env.OLLAMA_MODEL || 'mistralai/mistral-7b-instruct:free';
 
-/**
- * Core chat function using Ollama (open-source LLM)
- */
 async function chat(messages, options = {}) {
   try {
-    const response = await axios.post(`${OLLAMA_BASE_URL}/api/chat`, {
-      model: MODEL,
-      messages,
-      stream: false,
-      options: {
-        temperature: options.temperature || 0.7,
-        num_predict: options.maxTokens || 1500,
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: MODEL,
+        messages,
+        max_tokens: options.maxTokens || 800,
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://cramsesh-frontend.onrender.com',
+          'X-Title': 'CramSesh'
+        },
+        timeout: 60000
       }
-    }, { timeout: 60000 });
-
-    return response.data.message.content;
+    );
+    return response.data.choices[0].message.content;
   } catch (err) {
-    // Fallback: try OpenRouter free tier if configured
-    if (process.env.OPENROUTER_API_KEY) {
-      return await chatViaOpenRouter(messages, options);
-    }
-    throw new Error(`AI service unavailable: ${err.message}. Make sure Ollama is running with: ollama serve && ollama pull ${MODEL}`);
+    console.error('AI Error:', err.response?.data || err.message);
+    throw new Error('AI service failed: ' + (err.response?.data?.error?.message || err.message));
   }
 }
 
-async function chatViaOpenRouter(messages, options = {}) {
-  const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-    model: 'meta-llama/llama-3-8b-instruct:free',
-    messages,
-    max_tokens: options.maxTokens || 1500,
-  }, {
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    timeout: 60000
-  });
-
-  return response.data.choices[0].message.content;
-}
-
-/**
- * Generate structured lessons from study material content
- */
 async function generateLessons(content, filename) {
   const prompt = `You are an expert educational content designer. Analyze the following study material and break it into clear, structured lessons.
 
 Material: "${filename}"
-Content: ${content.slice(0, 4000)}
+Content: ${content.slice(0, 3000)}
 
-Generate 3-5 lessons from this material. Return ONLY valid JSON (no markdown, no explanation):
+Generate 3 lessons from this material. Return ONLY valid JSON with no markdown or extra text:
 {
   "lessons": [
     {
       "title": "Lesson title",
       "topic": "Main topic",
-      "difficulty": "easy|medium|hard",
+      "difficulty": "easy",
       "estimated_minutes": 20,
-      "content": "Detailed lesson content with key concepts, explanations, and examples (300-500 words)",
-      "summary": "2-3 sentence summary",
+      "content": "Detailed lesson content (200-300 words)",
+      "summary": "2 sentence summary",
       "key_points": ["point 1", "point 2", "point 3"]
     }
   ]
 }`;
 
-  const response = await chat([{ role: 'user', content: prompt }], { temperature: 0.5 });
-  
+  const response = await chat([{ role: 'user', content: prompt }], { maxTokens: 800 });
+
   try {
     const cleaned = response.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   } catch {
-    // If parsing fails, return a basic structure
     return {
       lessons: [{
         title: `Introduction to ${filename}`,
@@ -89,15 +69,12 @@ Generate 3-5 lessons from this material. Return ONLY valid JSON (no markdown, no
   }
 }
 
-/**
- * Generate quiz questions from lesson content
- */
 async function generateQuiz(lessonContent, lessonTitle, questionCount = 5) {
   const prompt = `Create a quiz for this lesson: "${lessonTitle}"
 
-Content: ${lessonContent.slice(0, 2000)}
+Content: ${lessonContent.slice(0, 1500)}
 
-Generate exactly ${questionCount} multiple choice questions. Return ONLY valid JSON:
+Generate exactly ${questionCount} multiple choice questions. Return ONLY valid JSON with no markdown:
 {
   "questions": [
     {
@@ -109,8 +86,8 @@ Generate exactly ${questionCount} multiple choice questions. Return ONLY valid J
   ]
 }`;
 
-  const response = await chat([{ role: 'user', content: prompt }], { temperature: 0.4 });
-  
+  const response = await chat([{ role: 'user', content: prompt }], { maxTokens: 800 });
+
   try {
     const cleaned = response.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
@@ -119,11 +96,8 @@ Generate exactly ${questionCount} multiple choice questions. Return ONLY valid J
   }
 }
 
-/**
- * Generate a study schedule
- */
 async function generateSchedule(lessons, userGoals, availableHoursPerDay) {
-  const lessonSummaries = lessons.map(l => 
+  const lessonSummaries = lessons.map(l =>
     `- "${l.title}" (${l.estimated_minutes} min, ${l.difficulty})`
   ).join('\n');
 
@@ -133,7 +107,7 @@ ${lessonSummaries}
 User goals: ${userGoals}
 Available hours per day: ${availableHoursPerDay}
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with no markdown:
 {
   "schedule": [
     {
@@ -144,16 +118,16 @@ Return ONLY valid JSON:
           "lesson_title": "title",
           "time_slot": "09:00",
           "duration_minutes": 30,
-          "tip": "study tip for this session"
+          "tip": "study tip"
         }
       ]
     }
   ],
-  "overview": "Brief overview of the study plan"
+  "overview": "Brief overview"
 }`;
 
-  const response = await chat([{ role: 'user', content: prompt }], { temperature: 0.5 });
-  
+  const response = await chat([{ role: 'user', content: prompt }], { maxTokens: 800 });
+
   try {
     const cleaned = response.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
@@ -162,50 +136,39 @@ Return ONLY valid JSON:
   }
 }
 
-/**
- * AI Tutor chat - answers questions based on material context
- */
 async function tutorChat(userMessage, materialContext, chatHistory) {
-  const systemPrompt = `You are CramSesh AI Tutor, an expert and encouraging study assistant. 
+  const systemPrompt = `You are CramSesh AI Tutor, an expert and encouraging study assistant.
 You help students understand their study materials deeply.
-${materialContext ? `\nStudent's study material context:\n${materialContext.slice(0, 2000)}` : ''}
+${materialContext ? `\nStudent's study material context:\n${materialContext.slice(0, 1500)}` : ''}
 
-Guidelines:
-- Be clear, encouraging, and educational
-- Give examples when explaining concepts
-- Break down complex ideas step by step
-- If you don't know something from the material, say so honestly
-- Keep responses focused and under 300 words unless more detail is needed`;
+Be clear, encouraging, and educational. Keep responses under 200 words.`;
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...chatHistory.slice(-10).map(h => ({ role: h.role, content: h.content })),
+    ...chatHistory.slice(-6).map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: userMessage }
   ];
 
-  return await chat(messages, { temperature: 0.7 });
+  return await chat(messages, { maxTokens: 600 });
 }
 
-/**
- * Generate a summary of progress and weak areas
- */
 async function analyzeProgress(completedLessons, quizScores, streakDays) {
-  const prompt = `Analyze this student's learning progress and provide insights:
+  const prompt = `Analyze this student's learning progress:
 
 Completed lessons: ${completedLessons.map(l => l.title).join(', ')}
 Quiz scores: ${quizScores.map(q => `${q.lesson}: ${q.score}%`).join(', ')}
 Study streak: ${streakDays} days
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with no markdown:
 {
   "strengths": ["strength 1", "strength 2"],
   "weak_areas": ["area 1", "area 2"],
-  "recommendation": "Personalized study recommendation",
+  "recommendation": "Personalized recommendation",
   "next_steps": ["step 1", "step 2", "step 3"]
 }`;
 
-  const response = await chat([{ role: 'user', content: prompt }], { temperature: 0.6 });
-  
+  const response = await chat([{ role: 'user', content: prompt }], { maxTokens: 600 });
+
   try {
     const cleaned = response.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
