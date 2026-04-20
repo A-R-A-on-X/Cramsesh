@@ -21,11 +21,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('cramsesh_token', res.data.token);
-    localStorage.setItem('cramsesh_user', JSON.stringify(res.data.user));
-    setUser(res.data.user);
-    return res.data;
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      localStorage.setItem('cramsesh_token', res.data.token);
+      localStorage.setItem('cramsesh_user', JSON.stringify(res.data.user));
+      setUser(res.data.user);
+      return res.data;
+    } catch (err) {
+      localStorage.removeItem('cramsesh_token');
+      localStorage.removeItem('cramsesh_user');
+      throw err;
+    }
   };
 
   const register = async (username, email, password) => {
