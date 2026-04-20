@@ -7,16 +7,16 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('cramsesh_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-api.interceptors.response.use(
+  return api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('cramsesh_token');
-      localStorage.removeItem('cramsesh_user');
-      window.location.href = '/login';
+      const isLoginRoute = err.config?.url?.includes('/auth/login');
+      if (!isLoginRoute) {
+        localStorage.removeItem('cramsesh_token');
+        localStorage.removeItem('cramsesh_user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }
