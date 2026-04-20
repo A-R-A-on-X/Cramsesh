@@ -13,15 +13,36 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirm) return toast.error('Passwords do not match');
-    if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
+    if (!form.username || !form.email || !form.password || !form.confirm) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (form.password !== form.confirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (form.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
     setLoading(true);
     try {
       await register(form.username, form.email, form.password);
-      toast.success('Account created! Welcome to CramSesh 🚀');
+      toast.success('Account created! Welcome to CramSesh!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Registration failed');
+      setLoading(false);
+      if (err.response) {
+        if (err.response.status === 409) {
+          toast.error('Email or username already taken');
+        } else {
+          toast.error(err.response.data?.error || 'Registration failed');
+        }
+      } else if (err.request) {
+        toast.error('Cannot reach server. Please try again later');
+      } else {
+        toast.error('Something went wrong. Please try again');
+      }
     } finally {
       setLoading(false);
     }
