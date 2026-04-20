@@ -12,35 +12,35 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.email || !form.password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    setLoading(true);
-    try {
-      await login(form.email, form.password);
-      toast.success('Welcome back!');
-      navigate('/dashboard');
-    } catch (err) {
-      setLoading(false);
-      if (err.response) {
-        if (err.response.status === 401) {
-          toast.error('Email or password is incorrect');
-        } else if (err.response.status === 404) {
-          toast.error('No account found with this email');
-        } else {
-          toast.error(err.response.data?.error || 'Login failed');
-        }
-      } else if (err.request) {
-        toast.error('Cannot reach server. Please try again later');
+  e.preventDefault();
+  if (!form.email || !form.password) {
+    toast.error('Please fill in all fields');
+    return;
+  }
+  setLoading(true);
+  try {
+    await login(form.email, form.password);
+    toast.success('Welcome back!');
+    navigate('/dashboard');
+  } catch (err) {
+    if (err.response) {
+      if (err.response.status === 401) {
+        toast.error('Email or password is incorrect');
+      } else if (err.response.status === 404) {
+        toast.error('No account found with this email');
       } else {
-        toast.error('Something went wrong. Please try again');
+        toast.error(err.response.data?.error || 'Login failed');
       }
-    } finally {
-      setLoading(false);
+    } else if (err.request) {
+      toast.error('Cannot reach server. Please try again later');
+    } else {
+      toast.error('Something went wrong. Please try again');
     }
-  };
+    setLoading(false);
+    return;
+  }
+  setLoading(false);
+};
 
   return (
     <div className="auth-page">
